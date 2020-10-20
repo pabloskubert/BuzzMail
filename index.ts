@@ -24,6 +24,6 @@ export default class Main {
     public static printBanner(banner: string): void {
         console.log(chalk.cyan.bold(banner));
         console.log(chalk.yellow.bold('Contato: pablo1920@protonmail.com'));
-        console.log(chalk.redBright.bold('Cridor por @deeman'));
+        console.log(chalk.redBright.bold('Cridor por @deeman - v0.0.9@Alpha'));
     }
 }

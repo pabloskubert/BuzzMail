@@ -13,11 +13,15 @@
   "dependencies": {
     "chalk": "^4.1.0",
     "figlet": "^1.5.0",
+    "line-reader": "^0.4.0",
+    "log-symbols": "^4.0.0",
     "nodemailer": "^6.4.14",
     "prompts": "^2.3.2"
   },
   "devDependencies": {
     "@types/figlet": "^1.2.0",
+    "@types/line-reader": "^0.0.30",
+    "@types/log-symbols": "^3.0.0",
     "@types/nodemailer": "^6.4.0",
     "@types/prompts": "^2.0.9",
     "ts-node": "^9.0.0",

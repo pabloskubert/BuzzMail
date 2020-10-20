@@ -2,11 +2,14 @@ import quest from 'prompts';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import prompts from 'prompts';
 
 export interface Configuracao {
     carregarLogins: boolean;
+    emailsCaminho: string;
     txtOuEmail: string;
     limiteEnvios?: number;
+    senhaEmail?: string;
     dirHtml: string;
 }
 
@@ -29,7 +32,8 @@ export default class Mailer {
         console.log('\n');
         const carregarLogins: boolean = resp1.usarVarios;
 
-        const resp2 = await quest({
+        const perg: Array<prompts.PromptObject> = [];
+        perg.push({
             type: 'text',
             name: 'enviarUsando',
             message: (carregarLogins) ? 'Caminho para lista de E-mails' : 'Conta de e-mail que irá enviar os emails',
@@ -47,6 +51,17 @@ export default class Mailer {
             }
         });
 
+        if (!carregarLogins) {
+            const pedirSenha: prompts.PromptObject = {
+                type: 'password',
+                name: 'credencial',
+                message: 'Senha'
+            };
+
+            perg.push(pedirSenha);
+        }
+
+        const resp2 = await quest(perg);
         const resp3 = await quest({
             type: 'confirm',
             name: 'limitar',
@@ -54,6 +69,7 @@ export default class Mailer {
             initial: false
         });
 
+        const senhaEmail = (resp2.credencial !== undefined)?resp2.credencial:'';
         let limiteEnvios = 500;
         if (resp3.limitar) {
             const li = await quest({
@@ -64,26 +80,44 @@ export default class Mailer {
 
             limiteEnvios = li.limite;
         }
+
+        let encontrarEm = 'n/a';
+        const validar = (arquivoDir: string): boolean | string => {
+            if (!fs.existsSync(arquivoDir)) {
+                let existe: boolean = false;
+
+                this.buscarHtmlEm.forEach((usuarioDir) => {
+                    const arq = path.join(this.ambiente, usuarioDir, arquivoDir);
+                    if (fs.existsSync(arq)) {
+                        existe = true;
+                        encontrarEm = arq;
+                    }
+                });
+
+                if (!existe) {
+                    return `Arquivo ${arquivoDir} não encontrado`;
+                } else return true;
+            } else return true;
+        }
+        
         const txtOuEmail: string = resp2.enviarUsando;
         console.log('\n\n');
-        const tipo = await quest({
+        await quest({
             type: 'text',
             name: 'enviar',
-            message: 'Diretório do arquivo html para envio',
-            validate: (arquivoDir: string): boolean | string => {
-                if (!fs.existsSync(arquivoDir)) {
-                    this.buscarHtmlEm.forEach((usuarioDir) => {
-
-                        const arq = path.join(this.ambiente, usuarioDir + path.sep + arquivoDir);
-                        if (fs.existsSync(arq)) return true;
-                    });
-                } else return true;
-
-                return `Arquivo ${arquivoDir} não encontrado`;
-            }
+            message: 'Caminho do arquivo html ou nome para envio',
+            validate: validar
         });
 
-        const dirHtml = tipo.enviar;
-        return { carregarLogins, txtOuEmail, limiteEnvios, dirHtml };
+        const dirHtml = encontrarEm;
+        await quest({
+            type: 'text',
+            name: 'dir',
+            message: 'Caminho do arquivo .txt contendo os emails alvos',
+            validate: validar
+        });
+
+        const emailsCaminho = encontrarEm;
+        return { carregarLogins, txtOuEmail, limiteEnvios, dirHtml, senhaEmail, emailsCaminho};
     }
 }
