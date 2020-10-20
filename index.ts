@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import MailerLag, { Configuracao } from './entrada';
 import Autenticar from './autenticar';
 import IniciarEnvio from './mailerEnviar';
+import Console from './console';
 
 figlet.text('MailerLag', (err, banner) => {
     if (err)
@@ -10,7 +11,12 @@ figlet.text('MailerLag', (err, banner) => {
     
     Main.printBanner(banner as string);
     Autenticar.aut();
-})
+});
+
+process.once('SIGINT', (sig) => {
+    Console.negativo(' Saindo...');
+    process.exit(0);
+});
 
 export default class Main {
     public static init(): void {

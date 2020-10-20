@@ -3,7 +3,6 @@ import fs from 'fs';
 import { Configuracao } from './entrada';
 import Console from './console';
 import NodeMailer from './engine/index';
-import { setupMailer } from './engine/index';
 
 export default class IniciarEnvio {
 

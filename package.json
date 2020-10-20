@@ -7,8 +7,10 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "tsc index.tsc",
-    "ap:run": "ts-node index.ts"
+    "build": "node_modules/.bin/tsc",
+    "ap:run": "ts-node index.ts",
+    "ap:pack": "pkg -t node12-win-x64 ./dist/obfuscated/index.js --out-path ./downloads",
+    "obfus": "javascript-obfuscator ./dist --output ./dist/obfuscated"
   },
   "dependencies": {
     "chalk": "^4.1.0",
@@ -19,6 +21,7 @@
     "prompts": "^2.3.2"
   },
   "devDependencies": {
+    "@tsconfig/node12": "^1.0.7",
     "@types/figlet": "^1.2.0",
     "@types/line-reader": "^0.0.30",
     "@types/log-symbols": "^3.0.0",

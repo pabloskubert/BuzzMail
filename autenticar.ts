@@ -7,10 +7,10 @@ export default class Autenticar {
         console.log('\n\n');
         prompt({
             type: 'password',
-            name: 'pass',
-            message: 'Digite o serial para ativar',
+            name: 'password',
+            message: 'Senha para entrar',
             validate: (userInput: string): boolean | string => {
-                return (userInput === 'root')
+                return (userInput === 'lucius13')
                         ? true
                         : 'Serial invalído';
             }

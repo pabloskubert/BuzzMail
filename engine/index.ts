@@ -60,7 +60,6 @@ export default class NodeMailer {
 
         transporte = this.preparar(enviarCom[0], enviarCom[1]);
         let emailsAlvo = new Array<string>();
-
         ler.eachLine(this.caminhoListaEmails, (linha) => {
 
             if (processados > this.loops) return false;
@@ -68,17 +67,26 @@ export default class NodeMailer {
                 enviarCom = this.logins.get(aux++)?.split(' ') as string[];
                 processados = 0;
                 transporte = this.preparar(enviarCom[0], enviarCom[1]);
-            } 
+            } else processados += enviarPorVez;
+
+            /* lê linha que esteja no formato: email,email,email */
+            if (linha.includes(','))
+                emailsAlvo.push(...linha.split(','));
 
             if (linhasLidas <= enviarPorVez && this.loops > enviarPorVez) {
                 emailsAlvo.push(linha);
                 linhasLidas++;
             } else {
                 linhasLidas = 0;
-                Console.positivo(`Enviando para ${emailsAlvo[0]},${emailsAlvo[1]},${emailsAlvo[2]},${emailsAlvo[3]}`)
+                if (this.loops>1) {
+                    Console.positivo(`De ${enviarCom[0]} para ${emailsAlvo[0]},${emailsAlvo[1]},${emailsAlvo[3]},${emailsAlvo[4]}`);
+                } else {
+                    Console.positivo(`De ${enviarCom[0]} para ${linha}`);
+                }
+
                 transporte.sendMail({
                     from: enviarCom[0],
-                    to: emailsAlvo,
+                    to: (this.loops < enviarPorVez)?linha:emailsAlvo,
                     subject: this.assunto,
                     text: this.titulo,
                     html: this.pagHtml
