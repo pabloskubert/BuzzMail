@@ -13,15 +13,17 @@ figlet.text('MailerLag', (err, banner) => {
     Autenticar.aut();
 });
 
-process.once('SIGINT', (sig) => {
-    Console.negativo(' Saindo...');
+const sairMsg = function MesagemAoSair() {
+    console.log('\n',chalk.redBright('[-]'), chalk.yellow.bold('Saindo...'), '\n');
     process.exit(0);
-});
+}
 
+process.once('SIGINT', sairMsg);
 export default class Main {
     public static init(): void {
         const mailer = new MailerLag();
         mailer.coletarInfos()
+
             .then((config: Configuracao) => {
                 new IniciarEnvio(config);
             });
@@ -29,7 +31,8 @@ export default class Main {
 
     public static printBanner(banner: string): void {
         console.log(chalk.cyan.bold(banner));
-        console.log(chalk.yellow.bold('Contato: pablo1920@protonmail.com'));
-        console.log(chalk.redBright.bold('Cridor por @deeman - v0.0.9@Alpha'));
+        console.log('\n');
+        console.log(chalk.yellow.bold('\tContato: pablo1920@protonmail.com'));
+        console.log(chalk.redBright.bold('\tCriado por @deeman - v1.0.0@BETA'));
     }
 }

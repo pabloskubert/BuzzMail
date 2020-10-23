@@ -9,10 +9,11 @@
   "scripts": {
     "build": "node_modules/.bin/tsc",
     "ap:run": "ts-node index.ts",
-    "ap:pack": "pkg -t node12-win-x64 ./dist/obfuscated/index.js --out-path ./downloads",
+    "ap:pack": "pkg -t node12-win-x64 ./dist/index.js --out-path ./downloads -c pkg_config.json",
     "obfus": "javascript-obfuscator ./dist --output ./dist/obfuscated"
   },
   "dependencies": {
+    "axios": "^0.20.0",
     "chalk": "^4.1.0",
     "figlet": "^1.5.0",
     "line-reader": "^0.4.0",

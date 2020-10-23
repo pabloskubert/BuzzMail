@@ -30,6 +30,16 @@ export default class IniciarEnvio {
             for (let login of arrayLogins) {
                 
                 const credencial = login.split(' ');
+                if (
+                    credencial[0] === undefined ||
+                    credencial[1] === undefined
+                ) {
+                    Console.negativo(`Erro na ${i+1}º linha do arquivo ${cnf.txtOuEmail}`);
+                    Console.positivo(`Dica \n \t O arquivo deve conter em uma única linha o email e senha para login \n \t exemplo: fulano@gmail.com bolsolixo onde 'bolsolixo' é a senha e na próxima linha a mesma coisa.`)
+                    Console.positivo(`Efetue a correção e tente novamente.`);
+                    process.exit(0);
+                }
+
                 console.log(chalk.green.bold('[+]')+'Lido '+chalk.red.bold(credencial[0])+' com senha ['+
                 chalk.red.bold(credencial[1])+']');
                 this.credenciais_login.set(i++, login);

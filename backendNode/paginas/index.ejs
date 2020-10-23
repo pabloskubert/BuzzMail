@@ -1,0 +1,17 @@
+<html>
+    <head>
+        <meta charset="utf8">
+        <title>Convidar</title>
+    </head>
+<body>
+    <center>
+        <h1>Cadastrar novo convite</h1>
+        <form action="<%= postForm.concat('/novoConvite?allowBy='+chave) %>" method="post">
+            <p>Convite
+                <input type="text" name="convite">
+            </p>
+            <input type="submit" value="Gerar">
+        </form>
+    </center>
+</body>
+</html>

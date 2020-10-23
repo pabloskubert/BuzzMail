@@ -1,0 +1,16 @@
+{
+  "name": "mailerAuth",
+  "version": "1.0.0",
+  "description": "Sistema de autenticão para o mailerlag",
+  "main": "index.js",
+  "author": "Pablo Henrique",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "ejs": "^3.1.5",
+    "escape-string-regexp": "^4.0.0",
+    "express": "^4.17.1",
+    "helmet": "^4.1.1",
+    "sqlite3": "^5.0.0"
+  }
+}
