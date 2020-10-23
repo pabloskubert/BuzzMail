@@ -27,6 +27,7 @@ export default class IniciarEnvio {
             const arrayLogins = strLogins.split('\n');
 
             let i = 0;
+            console.log('\n');
             for (let login of arrayLogins) {
                 
                 const credencial = login.split(' ');
@@ -40,7 +41,7 @@ export default class IniciarEnvio {
                     process.exit(0);
                 }
 
-                console.log(chalk.green.bold('[+]')+'Lido '+chalk.red.bold(credencial[0])+' com senha ['+
+                console.log(chalk.green.bold('[+]')+' Login detectado: '+chalk.red.bold(credencial[0])+' com senha ['+
                 chalk.red.bold(credencial[1])+']');
                 this.credenciais_login.set(i++, login);
             }

@@ -3,7 +3,6 @@ import chalk from 'chalk';
 import MailerLag, { Configuracao } from './entrada';
 import Autenticar from './autenticar';
 import IniciarEnvio from './mailerEnviar';
-import Console from './console';
 
 figlet.text('MailerLag', (err, banner) => {
     if (err)
@@ -33,6 +32,6 @@ export default class Main {
         console.log(chalk.cyan.bold(banner));
         console.log('\n');
         console.log(chalk.yellow.bold('\tContato: pablo1920@protonmail.com'));
-        console.log(chalk.redBright.bold('\tCriado por @deeman - v1.0.0@BETA'));
+        console.log(chalk.redBright.bold('\tCriado por @deeman - v1.0.0@STABLE'));
     }
 }

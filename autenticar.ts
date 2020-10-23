@@ -1,7 +1,7 @@
 import os from 'os';
 import path from 'path';
 import fs from 'fs';
-import prompt from 'prompts';
+import prompt, { Answers, PromptObject } from 'prompts';
 import chalk from 'chalk';
 import logsimb from 'log-symbols';
 import crypt from 'crypto';
@@ -43,9 +43,8 @@ export default class Autenticar {
     );
 
     private readonly cript: CriptoUtils;
-    private readonly perguntas = new Array<prompt.PromptObject | prompt.PromptObject[]>();
+    private readonly perguntas = new Array<prompt.PromptObject| prompt.PromptObject[]>();
     constructor() {
-
         this.cript = new CriptoUtils();
         this.perguntas.push({
             type: 'select',
@@ -89,13 +88,13 @@ export default class Autenticar {
                 type: 'text',
                 name: 'usuario',
                 message: `${chalk.green('Usuário')}`,
-                validate: validarInput
+                validate: validarInput,
             },
             {
                 type: 'password',
                 name: 'senha',
                 message: `${chalk.green('Senha')}`,
-                validate: validarInput
+                validate: validarInput,
             }
         ]);
 
@@ -128,9 +127,23 @@ export default class Autenticar {
         });
     }
 
+    private sair(): void {
+        Console.negativo('Saindo...');
+        process.exit(0);
+    }
+
     public static async aut(): Promise<void> {
         const aut = new Autenticar();
         if (!aut.jaAutenticou()) {
+
+            /* verifica se o servidor de login está on */
+            try {
+                await axios.get(aut.URL_AUTH);
+            } catch (err) {
+                Console.negativo('Servidor de autenticação offline, se o erro persistir entre em contato.');
+                console.log('\n');
+                process.exit(0);
+            }
 
             console.log('\n');
             const acao = await prompt(aut.perguntas[PERGUNTAS.autenticar]);
@@ -145,18 +158,31 @@ export default class Autenticar {
             }
         } else { 
             // lê as credenciais do arquivo
-            Console.positivo('Logando...');
             const loginCriptado = fs.readFileSync(aut.arquivoLogin).toString('utf8');
             const login = JSON.parse(aut.cript.decriptar(loginCriptado));
-            aut.logar({
-                u: login.u,
-                s: login.s
-            });
+            aut.loginOffline(login);
         }
     }
 
-    private async logar(credenciais?: Login): Promise<void> {
+    /* Login offline para economizar o tempo do dyno no heroku */
+    /* Não é possível verificar usuário e senha, o fato de estarem corretos 
+       é pressuposto baseando-se no fato de que arquivo foi criptografado usando AES-256 
+       com a respectiva chave */
+    private loginOffline(loginCarregado: Record<string, string>): void {
+
+        // verifica se o arquivo de login pertence a esta máquina
+        if (JSON.stringify(loginCarregado.sisInfo) === JSON.stringify(SisInfo.get())) {
+            Console.positivo(`@${loginCarregado.u}`);
+            Main.init();
+        } else {
+            Console.negativo(`Esse login pertence à ${loginCarregado.u} e deve ser utilizado em um único pc.`);
+            process.exit(0);
+        }
+    }
+
+    private async logar(): Promise<void> {
         let usuarioI = '', senhaI = '';
+
         const autenticar = async () => {
             let loginEndPoint = this.URL_AUTH.concat(this.ROTAS[ROTA.LOGIN_]);
             const carga = JSON.stringify({ usuario: usuarioI, senha: senhaI, ...SisInfo.get() });
@@ -170,55 +196,47 @@ export default class Autenticar {
             return respObj.stats;
         }
 
-        if (credenciais === undefined) {
-            console.log('\n');
-            const credenciais = await prompt(this.perguntas[PERGUNTAS.formLogin]);
-            if (credenciais.usuario === undefined || credenciais.senha === undefined)
-                process.exit(0);
+        const infoBasis = await prompt(this.perguntas[PERGUNTAS.formLogin]);
+        if (infoBasis.usuario === undefined || infoBasis.senha === undefined) this.sair();
 
-            usuarioI = credenciais.usuario;
-            senhaI = credenciais.senha;
-
-        } else {
-            usuarioI = credenciais.u;
-            senhaI = credenciais.s;
-        }
-
+        usuarioI = infoBasis.usuario;
+        senhaI = infoBasis.senha;
         const STATUS = await autenticar();
         switch (STATUS) {
             case 'WRONG-PASS':
                 Console.negativo('Senha incorreta.');
-                this.logar(undefined);
+                console.log('\n');
+                this.logar();
                 break;
 
             case 'NOT-YOUR':
                 Console.negativo('Esse login é válido somente para uma única máquina.');
+                console.log('\n');
                 process.exit(0);
 
             case 'NO-USER-PASS':
                 Console.negativo('Usuário ou senha inválido.')
-                this.logar(undefined);
+                console.log('\n');
+                this.logar();
                 break;
 
             default:
-                Console.positivo(`${(credenciais === undefined) ? 'Logado com sucesso!' : `@${usuarioI}`}`);
+                Console.positivo(`Logado com sucesso na conta ${infoBasis.usuario}`);
                 process.env.LOGG = 'OK';
-
-                if (credenciais === undefined) this.salvarLogin(usuarioI, senhaI);
+                this.salvarLogin(infoBasis.usuario, infoBasis.senha);
                 Main.init();
                 break;
         }
     }
 
     private salvarLogin(usuario: string, senha: string): void {
-        const carga = JSON.stringify({ u: usuario, s: senha });
+        const carga = JSON.stringify({ u: usuario, s: senha, sisInfo: SisInfo.get() });
         const dados = this.cript.encriptar(carga);
         fs.writeFileSync(this.arquivoLogin, dados);
     }
 
     private async criarConta(): Promise<void> {
         let prosseguir = false;
-
         let infosBasicas = await prompt(this.perguntas[PERGUNTAS.formConta]);
         console.log('\n');
         const semConvite = await prompt(this.perguntas[PERGUNTAS.possuiConvite]);
@@ -273,11 +291,13 @@ export default class Autenticar {
         } else {
 
             // não possui convite
-            console.log('\n', logsimb.warning,
-                chalk.bold.white('Por apenas R$135,00 você obtém o "convite", para usar este software sempre que quiser.'));
-            console.log(logsimb.info, chalk.white.bold('Me contate no e-mail: ') + chalk.yellow.underline(
-                'pablo1920@protonmail.com'
-            ).concat(' ou no meu facebook ') + chalk.red.underline('https://www.facebook.com/pablo6102') + ' se você deseja obter este software.')
+            Console.positivo('Se você deseja obter esse software, entre em contato comigo');
+            Console.positivo(
+                'Através do meu facebook: ' + chalk.red.underline('https://www.facebook.com/pablo6102/')
+            );
+            Console.positivo(
+                'Ou através do meu e-mail: ' + chalk.red.underline('pablodesign6102@gmail.com')
+            );
             console.log('\n\n');
             process.exit(0);
         }

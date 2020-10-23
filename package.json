@@ -9,8 +9,8 @@
   "scripts": {
     "build": "node_modules/.bin/tsc",
     "ap:run": "ts-node index.ts",
-    "ap:pack": "pkg -t node12-win-x64 ./dist/index.js --out-path ./downloads -c pkg_config.json",
-    "obfus": "javascript-obfuscator ./dist --output ./dist/obfuscated"
+    "ap:pack": "pkg -t node12-win-x64 ./dist/obfuscado/index.js --out-path ./download -c pkg_config.json",
+    "obfus": "javascript-obfuscator ./dist --output ./dist/obfuscado --reserved-strings 'encontrarEm' --dead-code-injection true --dead-code-injection-threshold 1"
   },
   "dependencies": {
     "axios": "^0.20.0",

@@ -1,8 +1,9 @@
 import quest from 'prompts';
+import nodemail, { Transporter } from 'nodemailer';
 import ler from 'line-reader';
-import nodemail,{ Transporter } from 'nodemailer';
-import Console from '../console';
+import chalk from 'chalk';
 import logsimb from 'log-symbols';
+import Console from '../console';
 
 export interface setupMailer {
     loginsEmail: Map<string | number, string>;
@@ -19,8 +20,12 @@ export default class NodeMailer {
     private readonly loginUnico: string;
     private readonly pagHtml: string;
     private readonly loops: number;
+    private enviados: number;
+    private enviosFalhos: number;
+    private totalEnviados: number;
+    private pararEnvio: boolean;
 
-    /* infos que serão enviadas */ 
+    /* infos que serão enviadas */
     private assunto: string;
     private titulo: string;
 
@@ -29,19 +34,36 @@ export default class NodeMailer {
         this.caminhoListaEmails = config.dirEmailsList;
         this.logins = config.loginsEmail;
         this.pagHtml = config.conteudoHTML;
+        this.pararEnvio = false;
+        this.enviados = 0;
+        this.enviosFalhos = 0;
+        this.totalEnviados = 0;
 
         this.loginUnico = (config.emailUnico !== undefined)
             ? config.emailUnico : 'n/a';
         this.assunto = '';
         this.titulo = '';
 
-        this.loops = (config.limite === 0) 
-            ? 500*this.logins.size
+        this.loops = (config.limite === 0)
+            ? 500 * this.logins.size
             : config.limite;
+
+        process.once('SIGINT', this.resultados);
     }
 
     public iniciar(): void {
         this.perguntarInfos();
+    }
+
+    private resultados(): boolean {
+        Console.positivo('CRTL+C Detectado!\n');
+        this.pararEnvio = true;
+
+        console.log('\t\n' + chalk.yellow('De '), chalk.white(`${this.totalEnviados}`) + ',',
+            chalk.green(`${this.enviados}`), chalk.yellow(' foram enviados com ', chalk.green('sucesso ')),
+            chalk.yellow('e '), chalk.red(`${this.enviosFalhos}`), chalk.yellow(' falharam.'));
+        console.log('\n');
+        process.exit(0);
     }
 
     /* função master-blaster imperativa */
@@ -50,12 +72,13 @@ export default class NodeMailer {
         let enviarCom: string[] = [];
         let transporte: Transporter;
         let linhasLidas = 0;
+        let maisDeUmEmail = false;
 
         const enviarPorVez = 5;
-        if (this.logins.size <= 1) {
-             enviarCom[0] = this.loginUnico;
-             enviarCom[1] = this.logins.get(this.loginUnico) as string;
-            
+        if (this.logins.size === 0) {
+            enviarCom[0] = this.loginUnico;
+            enviarCom[1] = this.logins.get(this.loginUnico) as string;
+
         } else enviarCom = this.logins.get(0)?.split(' ') as string[];
 
         transporte = this.preparar(enviarCom[0], enviarCom[1]);
@@ -63,6 +86,9 @@ export default class NodeMailer {
         ler.eachLine(this.caminhoListaEmails, (linha) => {
 
             if (processados > this.loops) return false;
+            /* Usuário apertou CRTL+C -> PARAR */
+            if (this.pararEnvio) return false;
+
             if (processados === 500) {
                 enviarCom = this.logins.get(aux++)?.split(' ') as string[];
                 processados = 0;
@@ -70,33 +96,52 @@ export default class NodeMailer {
             } else processados += enviarPorVez;
 
             /* lê linha que esteja no formato: email,email,email */
-            if (linha.includes(','))
+            if (linha.includes(',')) {
                 emailsAlvo.push(...linha.split(','));
+                linhasLidas += emailsAlvo.length;
+                maisDeUmEmail = true;
+            }
 
-            if (linhasLidas <= enviarPorVez && this.loops > enviarPorVez) {
+            if (linhasLidas <= enviarPorVez && !maisDeUmEmail) {
                 emailsAlvo.push(linha);
                 linhasLidas++;
             } else {
                 linhasLidas = 0;
-                if (this.loops>1) {
-                    Console.positivo(`De ${enviarCom[0]} para ${emailsAlvo[0]},${emailsAlvo[1]},${emailsAlvo[3]},${emailsAlvo[4]}`);
+                maisDeUmEmail = false;
+                if (this.loops > 1) {
+                    let logStr = chalk.green('[+]')+chalk.yellow('De ')+chalk.magenta(enviarCom[0])+chalk.yellow(' para ');
+                    let i = 1;
+                    for (let email of emailsAlvo) {
+                       logStr = logStr.concat(chalk.cyan(email));
+                        
+                       if (i !== emailsAlvo.length)
+                           logStr = logStr.concat(chalk.green(','));
+                       i++;
+                    }
+                    console.log(logStr);
                 } else {
-                    Console.positivo(`De ${enviarCom[0]} para ${linha}`);
+                    console.log(chalk.green('[+] '),
+                        chalk.yellow('De '), chalk.magenta(enviarCom[0]), chalk.yellow(' para '),
+                        chalk.cyan(emailsAlvo[0]));
                 }
 
                 transporte.sendMail({
                     from: enviarCom[0],
-                    to: (this.loops < enviarPorVez)?linha:emailsAlvo,
+                    to: (this.loops < enviarPorVez) ? linha : emailsAlvo,
                     subject: this.assunto,
                     text: this.titulo,
                     html: this.pagHtml
                 }, (err) => {
-                    if (err) 
+                    if (err) {
                         Console.negativo(`Erro ao enviar: ${err.message}`);
-                    
+                        this.enviosFalhos += 5;
+                    } else {
+                        this.enviados += 5;
+                    }
+                    this.totalEnviados += 5;
                     console.log(logsimb.success, 'Enviado com sucesso!');
                     emailsAlvo = [];
-                })
+                });
             }
         });
     }
@@ -112,18 +157,43 @@ export default class NodeMailer {
     }
 
     private async perguntarInfos(): Promise<void> {
-        const resp1 = await quest({
-            type: 'text',
-            name: 'form',
-            message: 'Titulo '
-        });
+        let prosseguir = false;
+        let resp1 = { form: 'n/a' }, resp2 = { form: 'n/a' };
 
-        const resp2 = await quest({
-            type: 'text',
-            name: 'form',
-            message: 'Assunto '
-        });
+        const validar = (infoEnviar: string): boolean | string => {
+            return (infoEnviar === undefined || infoEnviar === '')
+                ? 'Esse campo não pode ser vazio!'
+                : true
+        }
 
+        while (!prosseguir) {
+            console.log('\n');
+            resp1 = await quest({
+                type: 'text',
+                name: 'form',
+                message: 'Titulo ',
+                validate: validar
+            });
+
+            console.log('\n');
+            resp2 = await quest({
+                type: 'text',
+                name: 'form',
+                message: 'Assunto ',
+                validate: validar
+            });
+
+            const infos = await quest({
+                type: 'toggle',
+                name: 'incorreto',
+                inactive: 'Sim',
+                active: 'não',
+                initial: false,
+                message: `${chalk.yellow('O assunto ')}${chalk.red('[')}${chalk.white(`${resp2.form}`)}${chalk.red(']')}${chalk.yellow(' e o titulo ')}${chalk.red('[')}${chalk.white(`${resp1.form}`)}${chalk.red(']')}${chalk.yellow(' estão corretos')}`
+            });
+
+            prosseguir = !infos.incorreto;
+        }
         this.titulo = resp1.form;
         this.assunto = resp2.form;
         this.iniciarEnvios();
