@@ -63,17 +63,15 @@ export default class NodeMailer {
         }
     }
 
-    private resultados(sinal: unknown): boolean {
-        if (sinal === 'SIGINT') 
-            Console.positivo('CRTL+C Detectado!\n');
+    private resultados(sinal: unknown) {
         this.pararEnvio = true;
-
         const pcrt = (this.enviados/this.totalEnviados)*100;
         console.log('\t\n' +chalk.green('->')+chalk.yellow(' Aproveitamento de '),
         chalk.green(pcrt+'% ')+', '+chalk.white(this.enviados),chalk.yellow(' foram enviados com ', chalk.green('sucesso ')),
             chalk.yellow('e '), chalk.red(this.enviosFalhos), chalk.yellow(' falharam.'));
-        console.log('\n');
-        process.exit(0);
+        
+        console.log(chalk.red('Aperte CRTL+C para sair ou feche a janela.'));
+        while (true) {}
     }
 
     /* função master-blaster imperativa */
@@ -97,6 +95,7 @@ export default class NodeMailer {
             if (processados > this.loops) return false;
 
             /* Usuário apertou CRTL+C -> PARAR */
+            
             if (this.pararEnvio) return false;
 
             if (processados === 500) {

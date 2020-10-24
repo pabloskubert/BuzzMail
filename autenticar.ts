@@ -222,7 +222,6 @@ export default class Autenticar {
 
             default:
                 Console.positivo(`Logado com sucesso na conta ${infoBasis.usuario}`);
-                process.env.LOGG = 'OK';
                 this.salvarLogin(infoBasis.usuario, infoBasis.senha);
                 Main.init();
                 break;
@@ -276,9 +275,10 @@ export default class Autenticar {
             const retorno = JSON.parse(this.cript.decriptar(resp.data.stub));
             if (retorno.stats === 'REG-OK') {
                 Console.positivo('Cadastrado com sucesso! Faça login com seu novo registro.');
-                Console.positivo('Execute novamente o programa e escolha a opção entrar.');
-                process.exit(0);
-
+                console.log(chalk.red.bold('\nFeche e abra o programa novamente e selecione a opção "Entrar em conta existente", e digite seu login.\n'));
+                
+                // trava execução, para que o usuário feche a janela
+                while (true) {}
             } else if (retorno.stats === 'INV-CNV') {
 
                 Console.negativo('O convite digitado é invalído.');
