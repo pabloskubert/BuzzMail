@@ -6,6 +6,9 @@
   "author": "Pablo Henrique",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "ejs": "^3.1.5",
     "escape-string-regexp": "^4.0.0",

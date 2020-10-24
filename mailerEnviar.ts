@@ -41,8 +41,7 @@ export default class IniciarEnvio {
                     process.exit(0);
                 }
 
-                console.log(chalk.green.bold('[+]')+' Login detectado: '+chalk.red.bold(credencial[0])+' com senha ['+
-                chalk.red.bold(credencial[1])+']');
+                console.log(`${chalk.green('[+]')} Login detectado: ${chalk.cyan(credencial[0])} com senha ${chalk.yellow(credencial[1])}`);
                 this.credenciais_login.set(i++, login);
             }
         }

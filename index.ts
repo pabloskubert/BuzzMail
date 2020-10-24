@@ -20,6 +20,7 @@ const sairMsg = function MesagemAoSair() {
 process.once('SIGINT', sairMsg);
 export default class Main {
     public static init(): void {
+        
         const mailer = new MailerLag();
         mailer.coletarInfos()
 

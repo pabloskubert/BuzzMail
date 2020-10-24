@@ -2,7 +2,6 @@ import quest from 'prompts';
 import nodemail, { Transporter } from 'nodemailer';
 import ler from 'line-reader';
 import chalk from 'chalk';
-import logsimb from 'log-symbols';
 import Console from '../console';
 
 export interface setupMailer {
@@ -48,20 +47,31 @@ export default class NodeMailer {
             ? 500 * this.logins.size
             : config.limite;
 
-        process.once('SIGINT', this.resultados);
+        process.once('SIGINT', this.resultados.bind(this));
+        process.once('exit', this.resultados.bind(this));
     }
 
     public iniciar(): void {
         this.perguntarInfos();
     }
 
-    private resultados(): boolean {
-        Console.positivo('CRTL+C Detectado!\n');
+    private abortar(estado: { value: string, aborted: boolean }): void {
+        if (estado.aborted) {
+            console.log('\n');
+            Console.negativo('Saindo...\n');
+            process.exit(0);
+        }
+    }
+
+    private resultados(sinal: unknown): boolean {
+        if (sinal === 'SIGINT') 
+            Console.positivo('CRTL+C Detectado!\n');
         this.pararEnvio = true;
 
-        console.log('\t\n' + chalk.yellow('De '), chalk.white(`${this.totalEnviados}`) + ',',
-            chalk.green(`${this.enviados}`), chalk.yellow(' foram enviados com ', chalk.green('sucesso ')),
-            chalk.yellow('e '), chalk.red(`${this.enviosFalhos}`), chalk.yellow(' falharam.'));
+        const pcrt = (this.enviados/this.totalEnviados)*100;
+        console.log('\t\n' +chalk.green('->')+chalk.yellow(' Aproveitamento de '),
+        chalk.green(pcrt+'% ')+', '+chalk.white(this.enviados),chalk.yellow(' foram enviados com ', chalk.green('sucesso ')),
+            chalk.yellow('e '), chalk.red(this.enviosFalhos), chalk.yellow(' falharam.'));
         console.log('\n');
         process.exit(0);
     }
@@ -84,8 +94,8 @@ export default class NodeMailer {
         transporte = this.preparar(enviarCom[0], enviarCom[1]);
         let emailsAlvo = new Array<string>();
         ler.eachLine(this.caminhoListaEmails, (linha) => {
-
             if (processados > this.loops) return false;
+
             /* Usuário apertou CRTL+C -> PARAR */
             if (this.pararEnvio) return false;
 
@@ -93,7 +103,7 @@ export default class NodeMailer {
                 enviarCom = this.logins.get(aux++)?.split(' ') as string[];
                 processados = 0;
                 transporte = this.preparar(enviarCom[0], enviarCom[1]);
-            } else processados += enviarPorVez;
+            }
 
             /* lê linha que esteja no formato: email,email,email */
             if (linha.includes(',')) {
@@ -108,10 +118,14 @@ export default class NodeMailer {
             } else {
                 linhasLidas = 0;
                 maisDeUmEmail = false;
+                const enviarPara = emailsAlvo;
+                emailsAlvo = [];
+                processados += enviarPara.length;
+
                 if (this.loops > 1) {
                     let logStr = chalk.green('[+]')+chalk.yellow('De ')+chalk.magenta(enviarCom[0])+chalk.yellow(' para ');
                     let i = 1;
-                    for (let email of emailsAlvo) {
+                    for (let email of enviarPara) {
                        logStr = logStr.concat(chalk.cyan(email));
                         
                        if (i !== emailsAlvo.length)
@@ -122,25 +136,23 @@ export default class NodeMailer {
                 } else {
                     console.log(chalk.green('[+] '),
                         chalk.yellow('De '), chalk.magenta(enviarCom[0]), chalk.yellow(' para '),
-                        chalk.cyan(emailsAlvo[0]));
+                        chalk.cyan(enviarPara[0]));
                 }
 
                 transporte.sendMail({
                     from: enviarCom[0],
-                    to: (this.loops < enviarPorVez) ? linha : emailsAlvo,
+                    to: (this.loops < enviarPorVez) ? linha : enviarPara,
                     subject: this.assunto,
                     text: this.titulo,
                     html: this.pagHtml
                 }, (err) => {
                     if (err) {
                         Console.negativo(`Erro ao enviar: ${err.message}`);
-                        this.enviosFalhos += 5;
+                        this.enviosFalhos += enviarPara.length;
                     } else {
-                        this.enviados += 5;
+                        this.enviados += enviarPara.length;
                     }
-                    this.totalEnviados += 5;
-                    console.log(logsimb.success, 'Enviado com sucesso!');
-                    emailsAlvo = [];
+                    this.totalEnviados += enviarPara.length;
                 });
             }
         });
@@ -172,7 +184,8 @@ export default class NodeMailer {
                 type: 'text',
                 name: 'form',
                 message: 'Titulo ',
-                validate: validar
+                validate: validar,
+                onState: this.abortar
             });
 
             console.log('\n');
@@ -180,7 +193,8 @@ export default class NodeMailer {
                 type: 'text',
                 name: 'form',
                 message: 'Assunto ',
-                validate: validar
+                validate: validar,
+                onState: this.abortar
             });
 
             const infos = await quest({
@@ -189,6 +203,7 @@ export default class NodeMailer {
                 inactive: 'Sim',
                 active: 'não',
                 initial: false,
+                onState: this.abortar,
                 message: `${chalk.yellow('O assunto ')}${chalk.red('[')}${chalk.white(`${resp2.form}`)}${chalk.red(']')}${chalk.yellow(' e o titulo ')}${chalk.red('[')}${chalk.white(`${resp1.form}`)}${chalk.red(']')}${chalk.yellow(' estão corretos')}`
             });
 

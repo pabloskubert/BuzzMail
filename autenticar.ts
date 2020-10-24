@@ -34,7 +34,7 @@ export default class Autenticar {
 
     private readonly SALVAR_NOME = '.mailerAuth';
     private readonly nomeRegex = /^[a-zA-Z0-9]+$/;
-    private readonly URL_AUTH = 'http://localhost:3000';
+    private readonly URL_AUTH = 'https://mailer-lag.herokuapp.com';
     private readonly ROTAS = ['/logar', '/registrar', '/vefConvite'];
 
     private readonly VALIDAR_CONVITE_ROTA = this.URL_AUTH.concat(this.ROTAS[2]);
