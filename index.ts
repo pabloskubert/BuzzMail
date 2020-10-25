@@ -4,6 +4,7 @@ import MailerLag, { Configuracao } from './entrada';
 import Autenticar from './autenticar';
 import IniciarEnvio from './mailerEnviar';
 
+const VERSAO_ATUAL = '1.0.3';
 figlet.text('MailerLag', (err, banner) => {
     if (err)
         console.error(err.message);
@@ -33,6 +34,6 @@ export default class Main {
         console.log(chalk.cyan.bold(banner));
         console.log('\n');
         console.log(chalk.yellow.bold('\tContato: pablo1920@protonmail.com'));
-        console.log(chalk.redBright.bold('\tCriado por @deeman - v1.0.0@STABLE'));
+        console.log(chalk.redBright.bold('\tCriado por @deeman - v'+VERSAO_ATUAL+'@STABLE'));
     }
 }

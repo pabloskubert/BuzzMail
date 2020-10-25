@@ -3,9 +3,9 @@ import path from 'path';
 import fs from 'fs';
 import prompt, { Answers, PromptObject } from 'prompts';
 import chalk from 'chalk';
-import logsimb from 'log-symbols';
 import crypt from 'crypto';
 import axios, { AxiosResponse } from 'axios';
+import request from 'sync-request';
 import Console from './console';
 import Main from './index';
 
@@ -17,7 +17,8 @@ enum AUTENTICAR_ACAO {
 enum PERGUNTAS {
     autenticar = 0,
     possuiConvite,
-    formConta,
+    dialogoUsuario,
+    dialogoSenha,
     formLogin,
     conviteInput
 }
@@ -35,23 +36,33 @@ export default class Autenticar {
     private readonly SALVAR_NOME = '.mailerAuth';
     private readonly nomeRegex = /^[a-zA-Z0-9]+$/;
     private readonly URL_AUTH = 'https://mailer-lag.herokuapp.com';
-    private readonly ROTAS = ['/logar', '/registrar', '/vefConvite'];
+    //private readonly URL_AUTH = 'http://localhost:3000';
+    private readonly ROTAS = ['/logar', '/registrar', '/vefConvite', '/vefNick'];
 
     private readonly VALIDAR_CONVITE_ROTA = this.URL_AUTH.concat(this.ROTAS[2]);
+    private readonly VALIDAR_USUARIO_ROTA = this.URL_AUTH.concat(this.ROTAS[3]);
     private readonly arquivoLogin = path.join(
         os.homedir(), this.SALVAR_NOME
     );
 
     private readonly cript: CriptoUtils;
-    private readonly perguntas = new Array<prompt.PromptObject| prompt.PromptObject[]>();
+    private readonly perguntas = new Array<prompt.PromptObject | prompt.PromptObject[]>();
     constructor() {
         this.cript = new CriptoUtils();
+        const saidaPrematura = (estado: { value: string, aborted: boolean }) => {
+            if (estado.aborted) {
+                Console.negativo('Saindo...');
+                process.exit(0);
+            }
+        }
+
         this.perguntas.push({
             type: 'select',
             name: 'resp',
             instructions: false,
             message: `${chalk.magenta('Primeiro acesso, o que deseja fazer')}`,
             initial: 0,
+            onState: saidaPrematura,
             choices: [
                 { title: 'Criar conta', value: AUTENTICAR_ACAO.CRIAR_CONTA },
                 { title: 'Entrar em conta existente', value: AUTENTICAR_ACAO.LOGAR }
@@ -64,23 +75,55 @@ export default class Autenticar {
             message: `Você possuí um ${chalk.cyan('convite')}`,
             active: 'não',
             inactive: 'Sim',
-            initial: false
+            initial: false,
+            onState: saidaPrematura
         });
 
-        const validarInput = (n: string) => (!this.nomeRegex.test(n)) ? 'Sem símbolos e espaços, somente letras e números.' : true;
-        this.perguntas.push([
+        const validarInput = (n: string) => {
+            return (n === '' || undefined)
+                ? 'Digite alguma coisa!'
+                :  (!this.nomeRegex.test(n))
+                ? 'Não utilize símbolos e espaços.'
+                : true;
+        }
+        /* cadastro formulário - USUÁRIO */
+        this.perguntas.push(
             {
                 type: 'text',
-                name: 'nomeUsuario',
+                name: 'nomeCadastro',
                 message: `Nome de usuário ${chalk.yellow('(')}${chalk.red('sem espaços')}${chalk.yellow(')')}`,
-                validate: validarInput
-            },
+                validate: (nomeU) => {
+                    let i = validarInput(nomeU);
+                    if (i !== true) return i;
+
+                    try {
+                        const resp = request('POST', this.VALIDAR_USUARIO_ROTA, 
+                            { 
+                                body: `nick=${nomeU}`,
+                                headers: { 
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                }
+                            }
+                        );
+                        const resposta = JSON.parse(resp.body as string);
+                        return (resposta.status_nick === 'NOVO')
+                            ? true
+                            : 'O nick escolhido já está em uso.';
+                    } catch (Error) { return 'Oops! aconteceu erro inesperado no servidor.' }
+                },
+                onState: saidaPrematura
+            }
+        );
+
+        this.perguntas.push(
             {
                 type: 'password',
-                name: 'senhaUsuario',
+                name: 'senhaCadastro',
                 message: 'Senha:',
+                validate: validarInput,
+                onState: saidaPrematura
             }
-        ]);
+        );
 
         /* form login */
         this.perguntas.push([
@@ -89,12 +132,14 @@ export default class Autenticar {
                 name: 'usuario',
                 message: `${chalk.green('Usuário')}`,
                 validate: validarInput,
+                onState: saidaPrematura
             },
             {
                 type: 'password',
                 name: 'senha',
                 message: `${chalk.green('Senha')}`,
                 validate: validarInput,
+                onState: saidaPrematura
             }
         ]);
 
@@ -103,6 +148,7 @@ export default class Autenticar {
             type: 'text',
             name: 'convite',
             message: `${chalk.yellow('~Convite')}`,
+            onState: saidaPrematura,
             validate: async (conviteInput): Promise<boolean | string> => {
 
                 const sintaxe = validarInput(conviteInput);
@@ -150,20 +196,19 @@ export default class Autenticar {
 
             switch (acao.resp) {
                 case AUTENTICAR_ACAO.CRIAR_CONTA:
-                    aut.criarConta();
+                    await aut.criarConta();
                     break;
                 case AUTENTICAR_ACAO.LOGAR:
-                    aut.logar();
+                    await aut.logar();
                     break;
             }
-        } else { 
+        } else {
             // lê as credenciais do arquivo
             const loginCriptado = fs.readFileSync(aut.arquivoLogin).toString('utf8');
             const login = JSON.parse(aut.cript.decriptar(loginCriptado));
             aut.loginOffline(login);
         }
     }
-
     /* Login offline para economizar o tempo do dyno no heroku */
     /* Não é possível verificar usuário e senha, o fato de estarem corretos 
        é pressuposto baseando-se no fato de que arquivo foi criptografado usando AES-256 
@@ -236,17 +281,20 @@ export default class Autenticar {
 
     private async criarConta(): Promise<void> {
         let prosseguir = false;
-        let infosBasicas = await prompt(this.perguntas[PERGUNTAS.formConta]);
-        console.log('\n');
-        const semConvite = await prompt(this.perguntas[PERGUNTAS.possuiConvite]);
+        let conviteInput = {} as Answers<string>;
 
+        let usuario = await prompt(this.perguntas[PERGUNTAS.dialogoUsuario]);
+        let senha   = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
+        console.log('\n');
+
+        let semConvite = await prompt(this.perguntas[PERGUNTAS.possuiConvite]);
         if (!semConvite.sem) {
             // possui convite 
             while (!prosseguir) {
                 const validarForm = await prompt({
                     type: 'toggle',
                     name: 'erro',
-                    message: `Usuário ${chalk.red('[')}${chalk.yellow(infosBasicas.nomeUsuario) + chalk.red(']')} e senha ${chalk.red('[')}${chalk.yellow(infosBasicas.senhaUsuario)}${chalk.red(']')} estão corretos`,
+                    message: `Usuário ${chalk.red('[')}${chalk.yellow(usuario.nomeCadastro) + chalk.red(']')} e senha ${chalk.red('[')}${chalk.yellow(senha.senhaCadastro)}${chalk.red(']')} estão corretos`,
                     initial: false,
                     inactive: 'Sim',
                     active: 'não'
@@ -256,36 +304,34 @@ export default class Autenticar {
                 prosseguir = !validarForm.erro;
                 console.log('\n');
                 if (validarForm.erro)
-                    infosBasicas = await prompt(this.perguntas[PERGUNTAS.formConta]);
-            }
-            const conviteInput = await prompt(this.perguntas[PERGUNTAS.conviteInput]);
-            if (process.env.CONVITE_VALIDO !== 'OK') {
-                Console.negativo('Saída prematura do diálogo...');
-                process.exit(0);
+                    usuario = await prompt(this.perguntas[PERGUNTAS.dialogoUsuario]);
+                    senha   = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
             }
 
+            conviteInput = await prompt(this.perguntas[PERGUNTAS.conviteInput]);
             const urlAlvo = this.URL_AUTH.concat(this.ROTAS[ROTA.CADASTRO]);
             const cnv = {
                 convite: conviteInput.convite, infoSis: SisInfo.get(),
-                usuario: infosBasicas.nomeUsuario, senha: infosBasicas.senhaUsuario
+                usuario: usuario.nomeCadastro, senha: senha.senhaCadastro
             };
             const payload = this.cript.encriptar(JSON.stringify(cnv));
             const resp = await axios.post(urlAlvo, { stub: payload });
 
             const retorno = JSON.parse(this.cript.decriptar(resp.data.stub));
-            if (retorno.stats === 'REG-OK') {
-                Console.positivo('Cadastrado com sucesso! Faça login com seu novo registro.');
-                console.log(chalk.red.bold('\nFeche e abra o programa novamente e selecione a opção "Entrar em conta existente", e digite seu login.\n'));
-                
-                // trava execução, para que o usuário feche a janela
-                while (true) {}
-            } else if (retorno.stats === 'INV-CNV') {
+            switch (retorno.stats) {
+                case 'REG-OK':
+                    Console.positivo('Cadastrado com sucesso! Faça login com seu novo registro.');
+                    console.log(chalk.red.bold('\nFeche e abra o programa novamente e selecione a opção "Entrar em conta existente", e digite seu login.\n'));
 
-                Console.negativo('O convite digitado é invalído.');
-                process.exit(0);
-            } else {
-                Console.negativo(`O nome de usuário escolhido já está em uso!`);
-                process.exit(0);
+                    // trava execução, para que o usuário feche a janela
+                    while (true) { }
+                case 'INV-CNV':
+                    Console.negativo('O convite digitado é invalído.');
+                    process.exit(0);
+
+                default:
+                    Console.negativo('Houve um erro ao efetuar o cadastro, tente novamente mais tarde.\n');
+                    process.exit(0);
             }
 
         } else {

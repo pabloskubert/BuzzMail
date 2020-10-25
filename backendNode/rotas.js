@@ -10,18 +10,19 @@ const dbLocal = path.join(__dirname, 'db', 'mailerLogins.db3');
 const db = new sqlite.Database(dbLocal, sqlite.OPEN_READWRITE, (err) => {
     if (err)
         console.error(err.message);
-    
+
     console.log('Conectado ao banco de dados mailerLogins.db3');
 });
 
-class CriptoUtils { 
+class CriptoUtils {
     static encriptar(textoPuro, cb) {
+        if (textoPuro === undefined) cb('');
         const
             IV = crypto.randomBytes(16),
             salt = crypto.randomBytes(16);
 
         const chave = process.env.CHAVE_CRIPTOGRAFAR;
-        crypto.pbkdf2(chave, salt, 100000, 256/8, 'sha256', (err, chaveCipher) => {
+        crypto.pbkdf2(chave, salt, 100000, 256 / 8, 'sha256', (err, chaveCipher) => {
             if (err) throw err;
             let encriptar = crypto.createCipheriv('aes-256-cbc', chaveCipher, IV);
             encriptar.write(textoPuro);
@@ -34,6 +35,10 @@ class CriptoUtils {
     }
 
     static decriptar(textoCifrado, cb) {
+        if (textoCifrado === undefined) {
+            cb('');
+        }
+
         const cifrado = Buffer.from(textoCifrado, 'base64');
         const salt_len = 16;
         const iv_len = 16;
@@ -51,7 +56,7 @@ class CriptoUtils {
     }
 }
 
-rotaMgr.get('/', (req,res) => {
+rotaMgr.get('/', (req, res) => {
     let chave = (req.query['allowBy'] !== undefined)
         ? escpString(req.query['allowBy']) : '';
 
@@ -64,7 +69,10 @@ rotaMgr.get('/', (req,res) => {
 
 rotaMgr.post('/logar', (req, res) => {
     let payload = req.body['stub'];
-    if (payload === undefined) res.end();
+    if (payload === undefined)  {
+        res.end();
+        return;
+    }
 
     const retornarStatus = (status) => {
         const carga = JSON.stringify({ stats: status });
@@ -84,7 +92,7 @@ rotaMgr.post('/logar', (req, res) => {
             }
 
             const sql = `SELECT * FROM cadastros WHERE usuario = ? AND senha = ?`;
-            db.get(sql, [infos.usuario,infos.senha], (err, row) => {
+            db.get(sql, [infos.usuario, infos.senha], (err, row) => {
                 if (err) {
                     return console.error(err.message);
                 }
@@ -99,32 +107,39 @@ rotaMgr.post('/logar', (req, res) => {
                         retornarStatus('OK');
                     } else retornarStatus('NOT-YOUR');
                 } else {
-                    
+
                     retornarStatus('NO-USER-PASS');
                 }
-            });  
+            });
         })
     });
 });
 rotaMgr.post('/registrar', (req, res) => {
     let payload = req.body['stub'];
-    if (payload === undefined) res.end();
+    if (payload === undefined) {
+        res.end();
+        return;
+    }
+
+    const enviarStatus = function (status) {
+        const carga = JSON.stringify({ stats: status });
+        CriptoUtils.encriptar(carga, (payload) => {
+            res.json({
+                stub: payload
+            });
+            res.end();
+        });
+    }
 
     CriptoUtils.decriptar(payload, (decifrado) => {
         const infos = JSON.parse(decifrado);
         db.serialize((err) => {
             if (err)
                 console.error(err.message);
-            
-            // verifica se o convite é válido
-            db.get(`SELECT convite FROM convites WHERE convite = ?`, [infos.convite], (err, row) => {
-                if (row === undefined) {
-                    const carga = JSON.stringify({ stats: 'INV-CNV' });
-                    CriptoUtils.encriptar(carga, (payload) => {
 
-                        res.json({ stub: payload });
-                    });
-                }
+            conviteValido = true;
+            db.get(`SELECT convite FROM convites WHERE convite = ?`, [infos.convite], (err, row) => {
+                conviteValido = row !== undefined;
             });
 
             const sql = `INSERT INTO cadastros(usuario,senha,homedir,hostname,cpu,platform,arch,type) VALUES(?,?,?,?,?,?,?,?)`;
@@ -132,46 +147,69 @@ rotaMgr.post('/registrar', (req, res) => {
             const convite = i.convite;
             const sis = i.infoSis;
 
-            let cadastrado = true;
-            db.run(sql, [i.usuario, i.senha, sis.homedir, sis.hostname, sis.cpu, sis.platform, sis.arch, sis.type], (err) => {
-                if (err) {
+            /* verifica se o usuário já existe, se existir emiti um USER-TAKEN senão prossegue com o cadastro */
+            db.get(`SELECT usuario FROM cadastros WHERE usuario = ?`, i.usuario, (err, row) => {
+                if (err)
                     return console.error(err.message);
-                }
+                if (row || !conviteValido) {
+                    const erro = (!conviteValido)?'INV-CNV':'USER-TAKEN';
+                    enviarStatus(erro);
 
-                // remove o convite
-                if (cadastrado) {
-                    db.run(`DELETE FROM convites WHERE convite=?`, convite, (err) => {
+                // nenhum erro, efetuar cadastro
+                } else {
+                    db.run(sql, [i.usuario, i.senha, sis.homedir, sis.hostname, sis.cpu, sis.platform, sis.arch, sis.type], (err) => {
                         if (err) {
                             return console.error(err.message);
                         }
-
-                        console.log(`Linhas modificadas: ${this.changes}`);
+                        // remove o convite
+                        db.run(`DELETE FROM convites WHERE convite=?`, convite, (err) => {
+                            if (err) {
+                                return console.error(err.message);
+                            }
+                        });
                     });
-                }
 
-                const carga = JSON.stringify({ stats: (cadastrado) ? 'REG-OK' : 'ERR' });
-                CriptoUtils.encriptar(carga, (payload) => {
-                    res.json({
-                        stub: payload
-                    });
-                });
-            });
-        });
+                    enviarStatus('REG-OK');
+                } // IF (ROW || !CONVITEVALIDO) FIM
+            }); // CRIPTOUTILS CALLBACK
+        }); // CRIPTOUTILS CALLBACK
+    }); // ROTA
+});
+
+rotaMgr.post('/vefNick', (req,res) => {
+    const verificarNick = req.body['nick'];
+    if (verificarNick === undefined) {
+        res.end();
+        return;
+    }
+
+    console.log('Vou verificar o NICK: ' + verificarNick);
+    db.get(`SELECT usuario FROM cadastros WHERE usuario = ?`, verificarNick,
+    (err, row) => {
+        if (err)
+            return console.error(err.message);
+        res.json({
+            status_nick: (row) ? 'EM-USO' : 'NOVO'
+        })
     });
 });
-rotaMgr.post('/vefConvite', (req,res) => {
+
+rotaMgr.post('/vefConvite', (req, res) => {
     let payload = req.body['stub'];
-    if (payload === undefined) res.end();
+    if (payload === undefined) {
+        res.end();
+        return;
+    }
 
     CriptoUtils.decriptar(payload, (decifrado) => {
         let conviteRecebido = JSON.parse(decifrado).convite;
         db.get(`SELECT convite FROM convites WHERE convite = ?`, [conviteRecebido], (err, row) => {
             if (err)
                 return console.log(err.message);
-            
+
             CriptoUtils.encriptar(JSON.stringify({
                 convite: conviteRecebido,
-                seems: (row !== undefined)?'OK':'WRONG'
+                seems: (row !== undefined) ? 'OK' : 'WRONG'
             }), (textoCifrado) => {
                 res.json({
                     stub: textoCifrado
@@ -185,7 +223,7 @@ rotaMgr.post('/novoConvite', (req, res) => {
     let chave = (req.query['allowBy'] !== undefined)
         ? escpString(req.query['allowBy']) : '';
     let cadastrarConvite = req.body['convite'];
-    
+
     if (chave === chaveAcesso) {
         db.run(`INSERT INTO convites(convite) VALUES (?)`, [cadastrarConvite], (err) => {
             if (err) {

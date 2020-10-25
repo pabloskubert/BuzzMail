@@ -14,6 +14,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(rotas);
 
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT | 3000, () => {
     console.log('App servidor iniciado')
 });
