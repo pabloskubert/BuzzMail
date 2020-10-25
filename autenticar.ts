@@ -5,7 +5,6 @@ import prompt, { Answers, PromptObject } from 'prompts';
 import chalk from 'chalk';
 import crypt from 'crypto';
 import axios, { AxiosResponse } from 'axios';
-import request from 'sync-request';
 import Console from './console';
 import Main from './index';
 
@@ -92,25 +91,7 @@ export default class Autenticar {
                 type: 'text',
                 name: 'nomeCadastro',
                 message: `Nome de usuário ${chalk.yellow('(')}${chalk.red('sem espaços')}${chalk.yellow(')')}`,
-                validate: (nomeU) => {
-                    let i = validarInput(nomeU);
-                    if (i !== true) return i;
-
-                    try {
-                        const resp = request('POST', this.VALIDAR_USUARIO_ROTA, 
-                            { 
-                                body: `nick=${nomeU}`,
-                                headers: { 
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                }
-                            }
-                        );
-                        const resposta = JSON.parse(resp.body as string);
-                        return (resposta.status_nick === 'NOVO')
-                            ? true
-                            : 'O nick escolhido já está em uso.';
-                    } catch (Error) { return 'Oops! aconteceu erro inesperado no servidor.' }
-                },
+                validate: validarInput,
                 onState: saidaPrematura
             }
         );
@@ -225,18 +206,30 @@ export default class Autenticar {
         }
     }
 
-    private async logar(): Promise<void> {
+    private async logar(tentativas?: number): Promise<void> {
         let usuarioI = '', senhaI = '';
+        let tentouLogin = (tentativas !== undefined)?tentativas:1;
 
+        if (tentouLogin === 4) {
+            const acao = await prompt({
+                type: 'select',
+                name: 'continuar',
+                instructions: false,
+                message: 'Detectado várias tentivas de login sem êxito',
+                choices: [ 
+                    { title: 'Continuar tentando...', value: true },
+                    { title: 'Sair', value: false }
+                ]
+            });
+            tentouLogin = 1;
+            if (!acao.continuar) 
+                process.exit(0);
+        }
         const autenticar = async () => {
             let loginEndPoint = this.URL_AUTH.concat(this.ROTAS[ROTA.LOGIN_]);
             const carga = JSON.stringify({ usuario: usuarioI, senha: senhaI, ...SisInfo.get() });
             const payload = this.cript.encriptar(carga);
-
-            const resp = await axios.post(loginEndPoint, {
-                stub: payload
-            });
-
+            const resp = await axios.post(loginEndPoint, { stub: payload });
             const respObj = JSON.parse(this.cript.decriptar(resp.data.stub));
             return respObj.stats;
         }
@@ -251,7 +244,7 @@ export default class Autenticar {
             case 'WRONG-PASS':
                 Console.negativo('Senha incorreta.');
                 console.log('\n');
-                this.logar();
+                this.logar(++tentouLogin);
                 break;
 
             case 'NOT-YOUR':
@@ -262,7 +255,7 @@ export default class Autenticar {
             case 'NO-USER-PASS':
                 Console.negativo('Usuário ou senha inválido.')
                 console.log('\n');
-                this.logar();
+                this.logar(++tentouLogin);
                 break;
 
             default:
@@ -281,12 +274,12 @@ export default class Autenticar {
 
     private async criarConta(): Promise<void> {
         let prosseguir = false;
+        let nickValido = false;
         let conviteInput = {} as Answers<string>;
 
         let usuario = await prompt(this.perguntas[PERGUNTAS.dialogoUsuario]);
         let senha   = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
         console.log('\n');
-
         let semConvite = await prompt(this.perguntas[PERGUNTAS.possuiConvite]);
         if (!semConvite.sem) {
             // possui convite 
@@ -297,17 +290,32 @@ export default class Autenticar {
                     message: `Usuário ${chalk.red('[')}${chalk.yellow(usuario.nomeCadastro) + chalk.red(']')} e senha ${chalk.red('[')}${chalk.yellow(senha.senhaCadastro)}${chalk.red(']')} estão corretos`,
                     initial: false,
                     inactive: 'Sim',
-                    active: 'não'
+                    active: 'não',
+                    onState: (s: {value:string,aborted:boolean}) => {
+                        if (s.aborted) {
+                            Console.negativo('Saindo...');
+                            process.exit(0);
+                        }
+                    }
                 });
 
+                /* verifica se o nome de usuário escolhido já não existe */
+                const respObj = await axios.post(this.VALIDAR_USUARIO_ROTA, ( { nick: usuario.nomeCadastro }));
+                nickValido = respObj.data.status_nick === 'NOVO';
+                if (!nickValido && !validarForm.erro) {
+                    console.log('\n');
+                    Console.exclamacao(`O nick escolhido já está em uso!`);
+                }
                 // selecionou 'Sim'
-                prosseguir = !validarForm.erro;
-                console.log('\n');
-                if (validarForm.erro)
+                prosseguir = !validarForm.erro && nickValido;
+                if (!prosseguir) {
+                    console.log('\n');
                     usuario = await prompt(this.perguntas[PERGUNTAS.dialogoUsuario]);
                     senha   = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
+                }
             }
 
+            console.log('\n');
             conviteInput = await prompt(this.perguntas[PERGUNTAS.conviteInput]);
             const urlAlvo = this.URL_AUTH.concat(this.ROTAS[ROTA.CADASTRO]);
             const cnv = {
@@ -320,15 +328,13 @@ export default class Autenticar {
             const retorno = JSON.parse(this.cript.decriptar(resp.data.stub));
             switch (retorno.stats) {
                 case 'REG-OK':
-                    Console.positivo('Cadastrado com sucesso! Faça login com seu novo registro.');
-                    console.log(chalk.red.bold('\nFeche e abra o programa novamente e selecione a opção "Entrar em conta existente", e digite seu login.\n'));
-
-                    // trava execução, para que o usuário feche a janela
-                    while (true) { }
+                    Console.positivo('Conta criada com sucesso! Faça login com seu novo registro.\n');
+                    await this.logar();
+                    break;
                 case 'INV-CNV':
                     Console.negativo('O convite digitado é invalído.');
                     process.exit(0);
-
+                    break;
                 default:
                     Console.negativo('Houve um erro ao efetuar o cadastro, tente novamente mais tarde.\n');
                     process.exit(0);

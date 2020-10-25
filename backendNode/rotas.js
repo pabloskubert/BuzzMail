@@ -182,8 +182,6 @@ rotaMgr.post('/vefNick', (req,res) => {
         res.end();
         return;
     }
-
-    console.log('Vou verificar o NICK: ' + verificarNick);
     db.get(`SELECT usuario FROM cadastros WHERE usuario = ?`, verificarNick,
     (err, row) => {
         if (err)

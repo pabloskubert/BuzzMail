@@ -11,4 +11,8 @@ export default class Console {
         const neg = chalk.red.bold('[-] ');
         console.log('\n'+neg.concat(chalk.yellow.bold(msg)));
     }
+
+    static exclamacao(msg: string): void {
+        console.log(chalk.yellow('\n[!]'), chalk.green(msg));
+    }
 }
