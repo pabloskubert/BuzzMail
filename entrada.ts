@@ -13,12 +13,12 @@ export interface Configuracao {
     dirHtml: string;
 }
 
-let encontrarEm = 'n/a';
 type ON_STATE = { value: string, aborted: boolean }
 export default class Mailer {
 
     private readonly emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
     private readonly ambiente = os.homedir();
+    private encontrarEm: string = '';
     private readonly buscarHtmlEm = [
         "Desktop", "Documents", "Images", "Downloads"
     ];
@@ -40,26 +40,33 @@ export default class Mailer {
             initial: true,
             onState: this.verificarPulo
         });
-
         const carregarLogins: boolean = resp1.usarVarios;
         console.log('\n');
-        const validar = (arquivoDir: string): boolean | string => {
-            if (arquivoDir === undefined || arquivoDir === '')
+        const validar = (entrada: string, validarEmail?: boolean): boolean | string => {
+            if (entrada === undefined || entrada === '')
                 return 'Preencha este campo.';
                 
-            if (!fs.existsSync(arquivoDir)) {
+            /* validação do e-mail */
+            if (validarEmail !== undefined) {
+                if  (this.emailRegex.test(entrada)) {
+                    this.encontrarEm = entrada;
+                    return true;
+                } else return 'Formato de e-mail inválido.';
+            }
+
+            if (!fs.existsSync(entrada)) {
                 let existe: boolean = false;
 
                 this.buscarHtmlEm.forEach((usuarioDir) => {
-                    const arq = path.join(this.ambiente, usuarioDir, arquivoDir);
+                    const arq = path.join(this.ambiente, usuarioDir, entrada);
                     if (fs.existsSync(arq)) {
                         existe = true;
-                        encontrarEm = arq;
+                        this.encontrarEm = arq;
                     }
                 });
 
                 if (!existe) {
-                    return `Arquivo ${arquivoDir} não encontrado`;
+                    return `Arquivo ${entrada} não encontrado`;
                 } else return true;
             } else return true;
         }
@@ -69,7 +76,11 @@ export default class Mailer {
             type: 'text',
             name: 'enviarUsando',
             message: (carregarLogins) ? 'Caminho ou nome do arquivo com os logins(gmail)' : 'Conta de e-mail que irá enviar os emails',
-            validate: validar,
+            validate: (i: string): boolean | string => {
+                return (!carregarLogins)
+                    ? validar(i, true)
+                    : validar(i);
+            },
             onState: this.verificarPulo
         });
 
@@ -85,6 +96,7 @@ export default class Mailer {
         }
 
         const resp2 = await quest(perg);
+        const txtOuEmail: string = this.encontrarEm;
         console.log('\n');
         const resp3 = await quest({
             type: 'confirm',
@@ -111,26 +123,24 @@ export default class Mailer {
             limiteEnvios = li.limite;
         }
 
-        const txtOuEmail: string = encontrarEm;
         await quest({
             type: 'text',
             name: 'enviar',
             message: 'Caminho do arquivo html ou nome para envio',
-            validate: validar,
+            validate: (i) => validar(i),
             onState: this.verificarPulo
         });
 
-        const dirHtml = encontrarEm;
+        const dirHtml: string = this.encontrarEm;
         console.log('\n');
         await quest({
             type: 'text',
             name: 'dir',
             message: 'Caminho ou nome do arquivo .txt contendo os emails alvos',
-            validate: validar,
+            validate: (i) => validar(i),
             onState: this.verificarPulo
         });
-
-        const emailsCaminho = encontrarEm;
+        const emailsCaminho:string = this.encontrarEm;
         return { carregarLogins, txtOuEmail, limiteEnvios, dirHtml, senhaEmail, emailsCaminho};
     }
 }

@@ -5,6 +5,7 @@ import prompt, { Answers, PromptObject } from 'prompts';
 import chalk from 'chalk';
 import crypt from 'crypto';
 import axios, { AxiosResponse } from 'axios';
+import open from 'open';
 import Console from './console';
 import Main from './index';
 
@@ -18,7 +19,8 @@ enum PERGUNTAS {
     possuiConvite,
     dialogoUsuario,
     dialogoSenha,
-    formLogin,
+    dialogoLogin_usuario,
+    dialogoLogin_senha,
     conviteInput
 }
 
@@ -79,11 +81,11 @@ export default class Autenticar {
         });
 
         const validarInput = (n: string) => {
-            return (n === '' || undefined)
-                ? 'Digite alguma coisa!'
-                :  (!this.nomeRegex.test(n))
-                ? 'Não utilize símbolos e espaços.'
-                : true;
+            if (n === '' || n === undefined)
+                return 'Digite alguma coisa!';
+            if (!this.nomeRegex.test(n))
+                return 'Não utilize símbolos e espaços.';
+            return true;
         }
         /* cadastro formulário - USUÁRIO */
         this.perguntas.push(
@@ -106,23 +108,22 @@ export default class Autenticar {
             }
         );
 
-        /* form login */
-        this.perguntas.push([
-            {
-                type: 'text',
-                name: 'usuario',
-                message: `${chalk.green('Usuário')}`,
-                validate: validarInput,
-                onState: saidaPrematura
-            },
-            {
-                type: 'password',
-                name: 'senha',
-                message: `${chalk.green('Senha')}`,
-                validate: validarInput,
-                onState: saidaPrematura
-            }
-        ]);
+        /* FORMULÁRIO DE LOGIN */
+        this.perguntas.push({           // USUÁRIO - LOGIN
+            type: 'text',
+            name: 'usuario',
+            message: `${chalk.green('Usuário')}`,
+            validate: validarInput,
+            onState: saidaPrematura
+        });
+
+        this.perguntas.push({
+            type: 'password',           // SENHA - LOGIN
+            name: 'senha',
+            message: `${chalk.green('Senha')}`,
+            validate: validarInput,
+            onState: saidaPrematura
+        });
 
         // convite input
         this.perguntas.push({
@@ -162,10 +163,10 @@ export default class Autenticar {
     public static async aut(): Promise<void> {
         const aut = new Autenticar();
         if (!aut.jaAutenticou()) {
-
             /* verifica se o servidor de login está on */
             try {
-                await axios.get(aut.URL_AUTH);
+                const r = await axios.get(aut.URL_AUTH);
+                
             } catch (err) {
                 Console.negativo('Servidor de autenticação offline, se o erro persistir entre em contato.');
                 console.log('\n');
@@ -186,8 +187,19 @@ export default class Autenticar {
         } else {
             // lê as credenciais do arquivo
             const loginCriptado = fs.readFileSync(aut.arquivoLogin).toString('utf8');
-            const login = JSON.parse(aut.cript.decriptar(loginCriptado));
-            aut.loginOffline(login);
+            let login = { a: 'b' }, err = false;
+            try {
+                login = JSON.parse(aut.cript.decriptar(loginCriptado));
+            } catch (Error) {
+                try { fs.unlinkSync(aut.arquivoLogin) } catch (Error) { }
+                err = true;
+            }
+
+            if (!err) {
+                aut.loginOffline(login);
+            } else {
+                aut.logar();
+            }
         }
     }
     /* Login offline para economizar o tempo do dyno no heroku */
@@ -202,13 +214,14 @@ export default class Autenticar {
             Main.init();
         } else {
             Console.negativo(`Esse login pertence à ${loginCarregado.u} e deve ser utilizado em um único pc.`);
-            process.exit(0);
+            console.log(chalk.red('\nFeche a janela\n'));
+            while (true) {}
         }
     }
 
     private async logar(tentativas?: number): Promise<void> {
         let usuarioI = '', senhaI = '';
-        let tentouLogin = (tentativas !== undefined)?tentativas:1;
+        let tentouLogin = (tentativas !== undefined) ? tentativas : 1;
 
         if (tentouLogin === 4) {
             const acao = await prompt({
@@ -216,13 +229,13 @@ export default class Autenticar {
                 name: 'continuar',
                 instructions: false,
                 message: 'Detectado várias tentivas de login sem êxito',
-                choices: [ 
+                choices: [
                     { title: 'Continuar tentando...', value: true },
                     { title: 'Sair', value: false }
                 ]
             });
             tentouLogin = 1;
-            if (!acao.continuar) 
+            if (!acao.continuar)
                 process.exit(0);
         }
         const autenticar = async () => {
@@ -234,11 +247,15 @@ export default class Autenticar {
             return respObj.stats;
         }
 
-        const infoBasis = await prompt(this.perguntas[PERGUNTAS.formLogin]);
-        if (infoBasis.usuario === undefined || infoBasis.senha === undefined) this.sair();
+        console.log('\n');
+        const u = await prompt(this.perguntas[PERGUNTAS.dialogoLogin_usuario]);
+        console.log('\n');
+        const s = await prompt(this.perguntas[PERGUNTAS.dialogoLogin_senha]);
+        await (async () => {
+            usuarioI = u.usuario;
+            senhaI   = s.senha;
+        })();
 
-        usuarioI = infoBasis.usuario;
-        senhaI = infoBasis.senha;
         const STATUS = await autenticar();
         switch (STATUS) {
             case 'WRONG-PASS':
@@ -250,8 +267,8 @@ export default class Autenticar {
             case 'NOT-YOUR':
                 Console.negativo('Esse login é válido somente para uma única máquina.');
                 console.log('\n');
-                process.exit(0);
-
+                console.log(chalk.red('Feche a janela.'));
+                while (true) {}
             case 'NO-USER-PASS':
                 Console.negativo('Usuário ou senha inválido.')
                 console.log('\n');
@@ -259,8 +276,8 @@ export default class Autenticar {
                 break;
 
             default:
-                Console.positivo(`Logado com sucesso na conta ${infoBasis.usuario}`);
-                this.salvarLogin(infoBasis.usuario, infoBasis.senha);
+                Console.positivo(`Logado com sucesso na conta ${u.usuario}`);
+                this.salvarLogin(u.usuario, s.senha);
                 Main.init();
                 break;
         }
@@ -278,7 +295,7 @@ export default class Autenticar {
         let conviteInput = {} as Answers<string>;
 
         let usuario = await prompt(this.perguntas[PERGUNTAS.dialogoUsuario]);
-        let senha   = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
+        let senha = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
         console.log('\n');
         let semConvite = await prompt(this.perguntas[PERGUNTAS.possuiConvite]);
         if (!semConvite.sem) {
@@ -291,7 +308,7 @@ export default class Autenticar {
                     initial: false,
                     inactive: 'Sim',
                     active: 'não',
-                    onState: (s: {value:string,aborted:boolean}) => {
+                    onState: (s: { value: string, aborted: boolean }) => {
                         if (s.aborted) {
                             Console.negativo('Saindo...');
                             process.exit(0);
@@ -300,7 +317,7 @@ export default class Autenticar {
                 });
 
                 /* verifica se o nome de usuário escolhido já não existe */
-                const respObj = await axios.post(this.VALIDAR_USUARIO_ROTA, ( { nick: usuario.nomeCadastro }));
+                const respObj = await axios.post(this.VALIDAR_USUARIO_ROTA, ({ nick: usuario.nomeCadastro }));
                 nickValido = respObj.data.status_nick === 'NOVO';
                 if (!nickValido && !validarForm.erro) {
                     console.log('\n');
@@ -311,7 +328,7 @@ export default class Autenticar {
                 if (!prosseguir) {
                     console.log('\n');
                     usuario = await prompt(this.perguntas[PERGUNTAS.dialogoUsuario]);
-                    senha   = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
+                    senha = await prompt(this.perguntas[PERGUNTAS.dialogoSenha]);
                 }
             }
 
@@ -343,15 +360,12 @@ export default class Autenticar {
         } else {
 
             // não possui convite
-            Console.positivo('Se você deseja obter esse software, entre em contato comigo');
-            Console.positivo(
-                'Através do meu facebook: ' + chalk.red.underline('https://www.facebook.com/pablo6102/')
-            );
-            Console.positivo(
-                'Ou através do meu e-mail: ' + chalk.red.underline('pablodesign6102@gmail.com')
-            );
-            console.log('\n\n');
-            process.exit(0);
+            console.log('\n');
+            Console.positivo('Para efetuar a compra da licença, visite nossa página e abra um chat.');
+            console.log('\n');
+            await open('https://www.facebook.com/software.baron');
+            console.log(chalk.red('Feche essa janela...'));
+            while (true) {}
         }
     }
 

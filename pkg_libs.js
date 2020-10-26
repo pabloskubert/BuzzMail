@@ -4,6 +4,7 @@ require('./node_modules/figlet/lib/figlet');
 require('./node_modules/line-reader/lib/line_reader');
 require('./node_modules/nodemailer/lib/nodemailer');
 require('./node_modules/prompts/lib/index');
+require('./node_modules/open/index');
 
 /* módulos funcionais */
 require('./dist/obfuscado/engine/index');

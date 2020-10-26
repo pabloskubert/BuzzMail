@@ -70,7 +70,7 @@ export default class NodeMailer {
         chalk.green(pcrt+'% ')+', '+chalk.white(this.enviados),chalk.yellow(' foram enviados com ', chalk.green('sucesso ')),
             chalk.yellow('e '), chalk.red(this.enviosFalhos), chalk.yellow(' falharam.'));
         
-        console.log(chalk.red('Aperte CRTL+C para sair ou feche a janela.'));
+        console.log(chalk.red('\n\nTrabalho feito feche esta janela.\n\n'));
         while (true) {}
     }
 
@@ -83,12 +83,12 @@ export default class NodeMailer {
         let maisDeUmEmail = false;
 
         const enviarPorVez = 5;
-        if (this.logins.size === 0) {
+        if (this.logins.size === 1) {
             enviarCom[0] = this.loginUnico;
             enviarCom[1] = this.logins.get(this.loginUnico) as string;
 
         } else enviarCom = this.logins.get(0)?.split(' ') as string[];
-
+        
         transporte = this.preparar(enviarCom[0], enviarCom[1]);
         let emailsAlvo = new Array<string>();
         ler.eachLine(this.caminhoListaEmails, (linha) => {
