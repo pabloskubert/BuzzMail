@@ -4,7 +4,7 @@ import MailerLag, { Configuracao } from './entrada';
 import Autenticar from './autenticar';
 import IniciarEnvio from './mailerEnviar';
 
-const VERSAO_ATUAL = '1.0.3';
+const VERSAO_ATUAL = '1.0.4';
 figlet.text('MailerLag', (err, banner) => {
     if (err)
         console.error(err.message);
