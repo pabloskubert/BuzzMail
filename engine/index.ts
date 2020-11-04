@@ -182,7 +182,7 @@ export default class NodeMailer {
             resp1 = await quest({
                 type: 'text',
                 name: 'form',
-                message: 'Titulo ',
+                message: 'Titulo '.padStart(8),
                 validate: validar,
                 onState: this.abortar
             });
@@ -191,7 +191,7 @@ export default class NodeMailer {
             resp2 = await quest({
                 type: 'text',
                 name: 'form',
-                message: 'Assunto ',
+                message: 'Assunto '.padStart(8),
                 validate: validar,
                 onState: this.abortar
             });
@@ -203,7 +203,7 @@ export default class NodeMailer {
                 active: 'não',
                 initial: false,
                 onState: this.abortar,
-                message: `${chalk.yellow('O assunto ')}${chalk.red('[')}${chalk.white(`${resp2.form}`)}${chalk.red(']')}${chalk.yellow(' e o titulo ')}${chalk.red('[')}${chalk.white(`${resp1.form}`)}${chalk.red(']')}${chalk.yellow(' estão corretos')}`
+                message: `${chalk.yellow('O assunto ')}${chalk.red('[')}${chalk.white(`${resp2.form}`)}${chalk.red(']')}${chalk.yellow(' e o titulo ')}${chalk.red('[')}${chalk.white(`${resp1.form}`)}${chalk.red(']')}${chalk.yellow(' estão corretos')}`.padStart(8)
             });
 
             prosseguir = !infos.incorreto;

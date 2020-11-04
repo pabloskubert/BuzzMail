@@ -2,11 +2,11 @@
   "compilerOptions": {
     "outDir": "dist",
     "removeComments": true, /* Do not emit comments to output. */
-    "strict": true, /* Enable all strict type-checking options. */                /* Raise error on expressions and declarations with an implied 'any' type. */
+    "strict": true, /* Enable all strict type-checking options. */ /* Raise error on expressions and declarations with an implied 'any' type. */
     "strictNullChecks": true, /* Enable strict null checks. */
     "esModuleInterop": true,
     "skipLibCheck": true, /* Skip type checking of declaration files. */
     "forceConsistentCasingInFileNames": true, /* Disallow inconsistently-cased references to the same file. */
   },
-  "extends": "@tsconfig/node12/tsconfig.json",
+  "extends": "./node_modules/@tsconfig/node12/tsconfig.json",
 }

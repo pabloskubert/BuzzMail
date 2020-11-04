@@ -61,11 +61,11 @@ export default class Autenticar {
             type: 'select',
             name: 'resp',
             instructions: false,
-            message: `${chalk.magenta('Primeiro acesso, o que deseja fazer')}`,
+            message: `${chalk.magenta('Primeiro acesso, o que deseja fazer \n')}`.padStart(8),
             initial: 0,
             onState: saidaPrematura,
             choices: [
-                { title: 'Criar conta', value: AUTENTICAR_ACAO.CRIAR_CONTA },
+                { title: 'Criar conta \n', value: AUTENTICAR_ACAO.CRIAR_CONTA },
                 { title: 'Entrar em conta existente', value: AUTENTICAR_ACAO.LOGAR }
             ]
         });
@@ -73,7 +73,7 @@ export default class Autenticar {
         this.perguntas.push({
             type: 'toggle',
             name: 'sem',
-            message: `Você possuí um ${chalk.cyan('convite')}`,
+            message: `Você possuí um ${chalk.cyan('convite')}`.padStart(8),
             active: 'não',
             inactive: 'Sim',
             initial: false,
@@ -92,7 +92,7 @@ export default class Autenticar {
             {
                 type: 'text',
                 name: 'nomeCadastro',
-                message: `Nome de usuário ${chalk.yellow('(')}${chalk.red('sem espaços')}${chalk.yellow(')')}`,
+                message: `Nome de usuário ${chalk.yellow('(')}${chalk.red('sem espaços')}${chalk.yellow(')')}`.padStart(8),
                 validate: validarInput,
                 onState: saidaPrematura
             }
@@ -102,7 +102,7 @@ export default class Autenticar {
             {
                 type: 'password',
                 name: 'senhaCadastro',
-                message: 'Senha:',
+                message: 'Senha:'.padStart(8),
                 validate: validarInput,
                 onState: saidaPrematura
             }
@@ -112,7 +112,7 @@ export default class Autenticar {
         this.perguntas.push({           // USUÁRIO - LOGIN
             type: 'text',
             name: 'usuario',
-            message: `${chalk.green('Usuário')}`,
+            message: `${chalk.green('Usuário')}`.padStart(8),
             validate: validarInput,
             onState: saidaPrematura
         });
@@ -120,7 +120,7 @@ export default class Autenticar {
         this.perguntas.push({
             type: 'password',           // SENHA - LOGIN
             name: 'senha',
-            message: `${chalk.green('Senha')}`,
+            message: `${chalk.green('Senha')}`.padStart(8),
             validate: validarInput,
             onState: saidaPrematura
         });
@@ -129,7 +129,7 @@ export default class Autenticar {
         this.perguntas.push({
             type: 'text',
             name: 'convite',
-            message: `${chalk.yellow('~Convite')}`,
+            message: `${chalk.yellow('~Convite')}`.padStart(8),
             onState: saidaPrematura,
             validate: async (conviteInput): Promise<boolean | string> => {
 
@@ -228,7 +228,7 @@ export default class Autenticar {
                 type: 'select',
                 name: 'continuar',
                 instructions: false,
-                message: 'Detectado várias tentivas de login sem êxito',
+                message: 'Detectado várias tentivas de login sem êxito'.padStart(8),
                 choices: [
                     { title: 'Continuar tentando...', value: true },
                     { title: 'Sair', value: false }
@@ -304,7 +304,7 @@ export default class Autenticar {
                 const validarForm = await prompt({
                     type: 'toggle',
                     name: 'erro',
-                    message: `Usuário ${chalk.red('[')}${chalk.yellow(usuario.nomeCadastro) + chalk.red(']')} e senha ${chalk.red('[')}${chalk.yellow(senha.senhaCadastro)}${chalk.red(']')} estão corretos`,
+                    message: `Usuário ${chalk.red('[')}${chalk.yellow(usuario.nomeCadastro) + chalk.red(']')} e senha ${chalk.red('[')}${chalk.yellow(senha.senhaCadastro)}${chalk.red(']')} estão corretos`.padStart(8),
                     initial: false,
                     inactive: 'Sim',
                     active: 'não',
@@ -364,7 +364,7 @@ export default class Autenticar {
             Console.positivo('Para efetuar a compra da licença, visite nossa página e abra um chat.');
             console.log('\n');
             await open('https://www.facebook.com/software.baron');
-            console.log(chalk.red('Feche essa janela...'));
+            console.log(chalk.red('Até a próxima, você pode fechar essa janela.'));
             while (true) {}
         }
     }

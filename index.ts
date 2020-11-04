@@ -5,7 +5,12 @@ import Autenticar from './autenticar';
 import IniciarEnvio from './mailerEnviar';
 
 const VERSAO_ATUAL = '1.0.4';
-figlet.text('MailerLag', (err, banner) => {
+const figletOptions: figlet.Options = { 
+    horizontalLayout: 'full',
+    verticalLayout: 'full'
+}
+
+figlet.text('BuzzMail', figletOptions, (err, banner) => {
     if (err)
         console.error(err.message);
     
@@ -14,17 +19,17 @@ figlet.text('MailerLag', (err, banner) => {
 });
 
 const sairMsg = function MesagemAoSair() {
-    console.log('\n',chalk.redBright('[-]'), chalk.yellow.bold('Saindo...'), '\n');
+    console.log('\n',chalk.redBright('[-]'), chalk.yellow.bold('Saindo...').padStart(8), '\n');
     process.exit(0);
 }
+
+
 
 process.once('SIGINT', sairMsg);
 export default class Main {
     public static init(): void {
-        
         const mailer = new MailerLag();
         mailer.coletarInfos()
-
             .then((config: Configuracao) => {
                 new IniciarEnvio(config);
             });
@@ -34,6 +39,6 @@ export default class Main {
         console.log(chalk.cyan.bold(banner));
         console.log('\n');
         console.log(chalk.yellow.bold('\tContato: pablo1920@protonmail.com'));
-        console.log(chalk.redBright.bold('\tCriado por @deeman - v'+VERSAO_ATUAL+'@STABLE'));
+        console.log(chalk.redBright.bold('\tCriado por @deeman - v'+VERSAO_ATUAL+'@CLI'));
     }
 }

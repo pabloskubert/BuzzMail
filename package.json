@@ -1,5 +1,5 @@
 {
-  "name": "mailerLag",
+  "name": "buzzmail",
   "version": "1.0.0",
   "description": "Uma ferramenta simples para o velho e bom marketing",
   "main": "index.js",
@@ -7,10 +7,10 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "node_modules/.bin/tsc",
-    "ap:run": "ts-node index.ts",
-    "ap:pack": "pkg --targets node12-win-x64,node12-win-x86 ./dist/obfuscado/index.js --out-path ./download -c pkg_config.json",
-    "obfus": "javascript-obfuscator ./dist --output ./dist/obfuscado --dead-code-injection true --dead-code-injection-threshold 1"
+    "build": "./node_modules/.bin/tsc",
+    "ap:run": "./node_modules/.bin/ts-node index.ts",
+    "ap:pack": "./node_modules/.bin/pkg --targets node12-win-x64,node12-win-x86 ./dist/obfuscado/index.js --out-path ./download -c pkg_config.json",
+    "obfus": "./node_modules/.bin/javascript-obfuscator ./dist --output ./dist/obfuscado --dead-code-injection true --dead-code-injection-threshold 1"
   },
   "dependencies": {
     "axios": "^0.20.0",
@@ -27,8 +27,11 @@
     "@types/line-reader": "^0.0.30",
     "@types/log-symbols": "^3.0.0",
     "@types/nodemailer": "^6.4.0",
+    "@types/open": "^6.2.1",
     "@types/prompts": "^2.0.9",
     "gulp": "^4.0.2",
+    "javascript-obfuscator": "^2.6.4",
+    "pkg": "^4.4.9",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.3"
   }

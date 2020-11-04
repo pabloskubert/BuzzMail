@@ -36,7 +36,7 @@ export default class Mailer {
         const resp1 = await quest({
             type: 'confirm',
             name: 'usarVarios',
-            message: 'Carregar arquivo .txt com logins gmail',
+            message: 'Carregar arquivo .txt com logins gmail'.padStart(6),
             initial: true,
             onState: this.verificarPulo
         });
@@ -75,7 +75,7 @@ export default class Mailer {
         perg.push({
             type: 'text',
             name: 'enviarUsando',
-            message: (carregarLogins) ? 'Caminho ou nome do arquivo com os logins(gmail)' : 'Conta de e-mail que irá enviar os emails',
+            message: (carregarLogins) ? 'Caminho ou nome do arquivo com os logins(gmail)' : 'Conta de e-mail que irá enviar os emails'.padStart(8),
             validate: (i: string): boolean | string => {
                 return (!carregarLogins)
                     ? validar(i, true)
@@ -101,7 +101,7 @@ export default class Mailer {
         const resp3 = await quest({
             type: 'confirm',
             name: 'limitar',
-            message: 'Deseja limitar o número de e-mails a serem enviados',
+            message: 'Deseja limitar o número de e-mails a serem enviados'.padStart(8),
             initial: false,
             onState: this.verificarPulo
         });
@@ -113,7 +113,7 @@ export default class Mailer {
             const li = await quest({
                 type: 'number',
                 name: 'limite',
-                message: 'Limitar em',
+                message: 'Limitar em'.padStart(8),
                 onState: this.verificarPulo,
                 validate: (n) => (n==0 || n===undefined)
                     ? 'O número deve ser maior que zero'
@@ -126,7 +126,7 @@ export default class Mailer {
         await quest({
             type: 'text',
             name: 'enviar',
-            message: 'Caminho do arquivo html ou nome para envio',
+            message: 'Caminho do arquivo html ou nome para envio'.padStart(8),
             validate: (i) => validar(i),
             onState: this.verificarPulo
         });
@@ -136,7 +136,7 @@ export default class Mailer {
         await quest({
             type: 'text',
             name: 'dir',
-            message: 'Caminho ou nome do arquivo .txt contendo os emails alvos',
+            message: 'Caminho ou nome do arquivo .txt contendo os emails alvos'.padStart(8),
             validate: (i) => validar(i),
             onState: this.verificarPulo
         });
