@@ -1,17 +1,18 @@
-# BuzzMail - descontinuado
+# BuzzMail :mailbox: :email:
 
 BuzzMail é um script cli, para o envio de e-mails em massa automaticamente.
 
+#### Características chave:
+  - Escolha qualquer template html para enviar
   - Quando atinge o limite de 500/dia, pula para a próxima conta
   - Lê os e-mails alvos de um arquivo de texto
   - Mostra informações de sucesso/falhas
 
+>Obs: A minha intenção foi criar um script
+> e vendê-lo o mais rápido possível,
+>portanto o código não está em um padrão de design comum.
 
-> Pelo fato do script estar descontinuado
-> é necessário retirar a lógica relacionada
-> ao sistema de login embutido
-
-### Pré requisitos
+### Pré-requisitos
 - NodeJs v14
 - Npm
 ### Instalando o projeto e as dependências
