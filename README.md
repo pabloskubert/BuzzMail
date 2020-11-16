@@ -1,6 +1,7 @@
 # BuzzMail :mailbox: :email:
 
-BuzzMail é um script cli, para o envio de e-mails em massa automaticamente.
+BuzzMail é um script cli, para o envio de e-mails em massa automaticamente, vídeo demonstrando o uso:
+https://youtu.be/Ohi7QkxnWpY
 
 #### Características chave:
   - Escolha qualquer template html para enviar
