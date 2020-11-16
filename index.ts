@@ -15,17 +15,15 @@ figlet.text('BuzzMail', figletOptions, (err, banner) => {
         console.error(err.message);
     
     Main.printBanner(banner as string);
-    Autenticar.aut();
+    Main.init(); // comente esta linha, se quiser ativar o sistema de login
+    
+    /* Como esse script não está mais à venda
+       não é necessário ativar o sistema de login/cadastro
+       Se você quer ver esse sistema em ação, retire o comentário 
+       e ative o servidor: node backendNode\index.js */
+    //Autenticar.aut();
 });
 
-const sairMsg = function MesagemAoSair() {
-    console.log('\n',chalk.redBright('[-]'), chalk.yellow.bold('Saindo...').padStart(8), '\n');
-    process.exit(0);
-}
-
-
-
-process.once('SIGINT', sairMsg);
 export default class Main {
     public static init(): void {
         const mailer = new MailerLag();

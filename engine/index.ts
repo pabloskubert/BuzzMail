@@ -126,7 +126,6 @@ export default class NodeMailer {
                     let i = 1;
                     for (let email of enviarPara) {
                        logStr = logStr.concat(chalk.cyan(email));
-                        
                        if (i !== emailsAlvo.length)
                            logStr = logStr.concat(chalk.green(','));
                        i++;
