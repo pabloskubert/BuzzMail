@@ -24,15 +24,13 @@ BuzzMail é um script cli, para o envio de e-mails em massa automaticamente.
 
 ### Gerando o executável (.exe)
 
-Gerar o executável é bem simples, basta instalar globalmente as seguintes dependências:
+Gerar o executável é bem simples, basta executar os dois comandos abaixo:
  ```
- npm install -g gulp pkg javascript-obfuscator
- ```
- Após isso basta executar o comando, dentro do diretório BuzzMail:
- ```
+ npm install -g gulp
  gulp
  ```
- Após esse comando acima, será gerado os executáveis x64 e x86 em BuzzMail\downloads
+
+ Após a execução do comando __gulp__, será gerado os executáveis x64 e x86 em BuzzMail\downloads
  
  :octocat: Bom hacking! :octocat:
  
