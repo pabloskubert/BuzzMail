@@ -9,10 +9,6 @@ https://youtu.be/Ohi7QkxnWpY
   - Lê os e-mails alvos de um arquivo de texto
   - Mostra informações de sucesso/falhas
 
->Obs: A minha intenção foi criar um script
-> e vendê-lo o mais rápido possível,
->portanto o código não está em um padrão de design comum.
-
 ### Pré-requisitos
 - NodeJs v14
 - Npm
