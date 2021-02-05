@@ -3,8 +3,8 @@ const helmet = require('helmet');
 const app = express()
 const rotas = require('./rotas.js');
 
-process.env.LINK_HOST = 'https://mailer-lag.herokuapp.com';
-process.env.CHAVE_CRIPTOGRAFAR = 'jogueteatresirmao81284251856278414812';
+process.env.LINK_HOST = '<HOST RESPONSÁVEL PELA AUTENTICAÇÃO>';
+process.env.CHAVE_CRIPTOGRAFAR = '<CHAVE PARA CRIPTOGRAFAR COMUNICAÇÃO ENTRE O CLIENT E O SERVER;
 
 app.set('view engine', 'ejs');
 app.set('views', './paginas');
