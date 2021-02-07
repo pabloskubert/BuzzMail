@@ -5,6 +5,10 @@
 </p>
 
 Envie até 10k de e-mails por dia sem esforço :fire:	:fire:
+
+##### Observação
+É necessário ativar a opção *"Acesso a apps menos seguros"* em todas as contas que você utilizar como login no buzzmail
+caso contrário a ferramenta não enviará os e-mails. [clique aqui para ativar essa opção](https://myaccount.google.com/lesssecureapps)
 #### Características chave:
 
   - Quando atinge 500 envios, pula para o próximo login (conta e senha no arquivo txt)
