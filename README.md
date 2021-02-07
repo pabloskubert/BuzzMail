@@ -1,20 +1,27 @@
-# BuzzMail :mailbox: :email:
+<h1 align="center">BuzzMail :mailbox: :email:</h1>
+	
+<p align="center">
+  <img src="https://github.com/pabloskubert/BuzzMail/blob/main/tela_inicial.png?raw=true">
+</p>
 
-BuzzMail é um script cli, para o envio de e-mails em massa automaticamente, vídeo demonstrando o uso:
-https://youtu.be/Ohi7QkxnWpY
-
+Envie até 10k de e-mails por dia sem esforço :fire:	:fire:
 #### Características chave:
 
   - Quando atinge 500 envios, pula para o próximo login (conta e senha no arquivo txt)
   - Envia para os e-mails lidos de um arquivo de texto (cada e-mail separado por ",")
-  - Mostra a porcentagem de envios bem sucedidos, e de envios que falharam.
+  - Mostra porcentagem de envios bem sucedidos, e de envios que falhos.
 
-### Pré-requisitos
+### Downloads
+  - Baixe para distros gnu/linux e nix* [clique aqui](https://github.com/pabloskubert/BuzzMail/releases/tag/1.0.4) 
+  - Windows (7/8/10) *indisponível*
+  - Mac OS *indisponível*
+
+### Guia para criar um executável stand-alone para sua plataforma (caso não haja uma release):
+
+#### Pré-requisitos
 - NodeJs v14
 - Npm
 - Git CLI - Não é necessário caso você baixe o zip
-
-### Guia para instalar o BuzzMail:
 
 #### Faça download do projeto
 ```
@@ -29,15 +36,16 @@ Gerar o executável é bem simples, basta executar o comando abaixo dentro do di
   npm run gulp
  ```
 
- Após a execução do comando __gulp__, será gerado os executáveis x64 e x86 em BuzzMail\downloads
- E pronto, simples assim!
- 
+ Após a execução do comando __gulp__, será criado o executável em BuzzMail\downloads e pronto! 
  Qualquer __dúvida__ me chame no fb/protonmail. :incoming_envelope:
  
  :octocat: Se você achou esse projeto útil deixe uma :star: para aumentar a relevância! :octocat:
- 
+
+### Usando BuzzMail: 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Ohi7QkxnWpY/0.jpg)](https://www.youtube.com/watch?v=Ohi7QkxnWpY)
+
  ### Futuras melhorias: 
- - Gerar binários pré-compilados e colocar no repositório (evitando o processo acima)
+ - Lançar releases para Windows/Mac OS
  - Implementar anti-spam com criptografia. 
  - Salvar configurações para uso posterior.
  
