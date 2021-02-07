@@ -1,7 +1,7 @@
 {
-    "name": "mailerLag",
-    "version": "0.0.9",
-    "description": "Script para envio de e-mails em massa",
+    "name": "BuzzMail",
+    "version": "1.0.4",
+    "description": "Ferramenta CLI para envio de e-mails em massa automaticamente.",
     "bin": "./dist/obfuscado/index.js",
     "pkg": {
         "assets": [

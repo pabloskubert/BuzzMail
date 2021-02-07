@@ -1,7 +1,7 @@
 {
   "name": "buzzmail",
   "version": "1.0.0",
-  "description": "Uma ferramenta simples para o velho e bom marketing",
+  "description": "Ferramenta CLI para envio de e-mails em massa automaticamente.",
   "main": "index.js",
   "author": "Pablo Henrique G",
   "license": "MIT",
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "./node_modules/.bin/tsc",
     "ap:run": "./node_modules/.bin/ts-node index.ts",
-    "ap:pack": "./node_modules/.bin/pkg --targets node12-win-x64,node12-win-x86 ./dist/obfuscado/index.js --out-path ./download -c pkg_config.json",
+    "ap:pack": "./node_modules/.bin/pkg --targets node14 ./dist/obfuscado/index.js --out-path ./download -c pkg_config.json",
     "obfus": "./node_modules/.bin/javascript-obfuscator ./dist --output ./dist/obfuscado --dead-code-injection true --dead-code-injection-threshold 1"
   },
   "dependencies": {
