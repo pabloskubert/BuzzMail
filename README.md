@@ -4,7 +4,7 @@ BuzzMail é um script cli, para o envio de e-mails em massa automaticamente, ví
 https://youtu.be/Ohi7QkxnWpY
 
 #### Características chave:
-  - 
+
   - Quando atinge 500 envios, pula para o próximo login (conta e senha no arquivo txt)
   - Envia para os e-mails lidos de um arquivo de texto (cada e-mail separado por ",")
   - Mostra a porcentagem de envios bem sucedidos, e de envios que falharam.
