@@ -25,7 +25,7 @@ Envie até 10k de e-mails por dia sem esforço :fire:	:fire:
 
 #### Faça download do projeto
 ```
-    git clone https://github.com/pabloQubit/BuzzMail.git ou baixe diretamente o ZIP
+    git clone https://github.com/pabloskubert/BuzzMail ou baixe diretamente o ZIP
     cd BuzzMail
     npm install ou yarn install
 ```
